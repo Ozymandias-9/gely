@@ -30,9 +30,6 @@ def render_config_string(template_str: str, params: dict) -> str:
 
 def render_filename(filename_template: str, params: dict) -> str:
     """Allow templated filenames like middleware_{{name}}.ts or {name}.js"""
-    # Try config style first, then template style? 
-    # Or just config style as filenames usually come from config.
-    # The user config uses {name}.
     return render_config_string(filename_template, params)
 
 

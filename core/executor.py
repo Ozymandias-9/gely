@@ -66,21 +66,11 @@ def execute_action(config: dict, action_name: str, cli_args: dict = None, config
             return
 
         # Handle Produces
-        produces = layer.get("produces", [])
+        produces = layer.get("produces")
         if produces:
-            # If result is a single value, map to first produces key?
-            # Or does the handler return a dict?
-            # My handlers currently return a single string (path) or None.
-            # The config implies multiple produces? ["reducer_folder"]
-            # Let's assume 1-to-1 mapping for now if result is scalar.
-            if len(produces) == 1 and not isinstance(result, (list, dict, tuple)):
-                context[produces[0]] = result
-                print(f"    Produced {produces[0]}: {result}")
-            elif isinstance(result, dict):
-                for k in produces:
-                    if k in result:
-                        context[k] = result[k]
-                        print(f"    Produced {k}: {result[k]}")
+            if len(produces) > 0:
+                context[produces] = result
+                print(f"    Produced {produces}: {result}")
     
     print("Action completed successfully.")
 

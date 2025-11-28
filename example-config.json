@@ -1,0 +1,144 @@
+{
+    "project": "Random Project",
+    "actions": {
+        "add-reducer": {
+            "title": "Add reducer",
+            "layers": [
+                {
+                    "action": "create-folder",
+                    "params": [
+                        "folderName",
+                        {
+                            "target": "main/{folderName}/state"
+                        }
+                    ],
+                    "produces": "reducer_folder"
+                },
+                {
+                    "action": "create-folder",
+                    "params": [
+                        "folderName",
+                        {
+                            "target": "main/{folderName}/view"
+                        }
+                    ],
+                    "produces": "view_folder"
+                },
+                {
+                    "uses": [
+                        "view_folder"
+                    ],
+                    "action": "create-file",
+                    "params": [
+                        "name",
+                        {
+                            "template": "view.tpl"
+                        },
+                        {
+                            "output": "{view_folder}/index.js"
+                        }
+                    ]
+                },
+                {
+                    "uses": [
+                        "reducer_folder"
+                    ],
+                    "action": "create-file",
+                    "params": [
+                        "name",
+                        {
+                            "template": "reducer.tpl"
+                        },
+                        {
+                            "output": "{reducer_folder}/{name}.reducer.js"
+                        }
+                    ],
+                    "produces": "reducer_path"
+                },
+                {
+                    "uses": [
+                        "reducer_folder"
+                    ],
+                    "action": "create-file",
+                    "params": [
+                        "name",
+                        {
+                            "template": "reducer-service.tpl"
+                        },
+                        {
+                            "output": "{reducer_folder}/{name}.service.js"
+                        }
+                    ],
+                    "produces": "service_path"
+                },
+                {
+                    "uses": [
+                        "reducer_folder"
+                    ],
+                    "action": "create-file",
+                    "params": [
+                        "name",
+                        {
+                            "template": "reducer-action-types.tpl"
+                        },
+                        {
+                            "output": "{reducer_folder}/{name}.actionTypes.js"
+                        }
+                    ]
+                },
+                {
+                    "uses": [
+                        "service_path"
+                    ],
+                    "action": "append-to-file",
+                    "params": [
+                        {
+                            "input": "import { {name}Service } from '{service_path}';"
+                        },
+                        {
+                            "target": "main/services/index.js"
+                        },
+                        {
+                            "delimiter": "// @imports"
+                        }
+                    ]
+                },
+                {
+                    "action": "append-to-file",
+                    "params": [
+                        {
+                            "input": "    {name}Service,"
+                        },
+                        {
+                            "target": "main/services/index.js"
+                        },
+                        {
+                            "delimiter": "// @definition"
+                        }
+                    ]
+                }
+            ]
+        },
+        "add-action": {
+            "layers": [
+                {
+                    "action": "append-to-file",
+                    "params": [
+                        "reducer_folder",
+                        "reducer_name",
+                        "action_name",
+                        {
+                            "template": "action-type.tpl"
+                        },
+                        {
+                            "target": "main/{reducer_folder}/state/{reducer_name}.actionTypes.js"
+                        },
+                        {
+                            "delimiter": "// @actionTypes"
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}
