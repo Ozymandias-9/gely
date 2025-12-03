@@ -62,45 +62,46 @@ def handle_append_to_file(params: dict, context: dict):
     """
     Handle 'append-to-file' action.
     """
-    target_file = params.get("target")
+    target_template = params.get("target")
     delimiter = params.get("delimiter")
-    template_name = params.get("template", "")
-    input_content = params.get("input", "")
-    config_dir = context.get("config_dir", ".")
+    input_content = params.get("input") 
+    template_name = params.get("template")
     
-    if not target_file:
+    if not target_template:
         raise ValueError("append-to-file requires 'target'")
         
-    target_path = render_filename(target_file, context)
+    target_path = render_filename(target_template, context)
     
     if not os.path.exists(target_path):
         raise FileNotFoundError(f"Target file for append not found: {target_path}")
-    
+        
     content_to_append = ""
-
-    if len(template_name) > 0:
+    
+    if template_name:
+        config_dir = context.get("config_dir", ".")
         template_path = os.path.join(config_dir, "templates", template_name)
         
         if not os.path.exists(template_path):
-            # Fallback to local templates dir if not found (optional)
+            # Fallback
             fallback_path = os.path.join("templates", template_name)
             if os.path.exists(fallback_path):
                 template_path = fallback_path
             else:
                 raise FileNotFoundError(f"Template not found: {template_path}")
-        
+                
         with open(template_path, 'r', encoding='utf-8') as f:
             template_str = f.read()
             
-        # Render content
         content_to_append = render_template(template_str, context)
-    # Try to resolve input as a variable first
-    elif len(input_content) > 0:
+        
+    elif input_content:
+        # Try to resolve input as a variable first
         if input_content in context:
             content_to_append = str(context[input_content])
         else:
             # Render as config string
             content_to_append = render_config_string(input_content, context)
+        
     else:
         raise ValueError("append-to-file requires 'input' or 'template'")
     

@@ -1,4 +1,3 @@
-import sys
 from core.handlers import handle_create_folder, handle_create_file, handle_append_to_file
 
 HANDLERS = {
@@ -28,6 +27,14 @@ def execute_action(config: dict, action_name: str, cli_args: dict = None, config
     # Global/Project context
     context["project_root"] = os.getcwd()
     context["config_dir"] = config_dir
+
+    # Process explicit inputs
+    inputs = action_def.get("inputs", {})
+    for input_name, input_def in inputs.items():
+        if input_name not in context:
+            prompt = input_def.get("prompt", f"Enter value for '{input_name}': ")
+            val = input(f"{prompt} ")
+            context[input_name] = val
 
     for i, layer in enumerate(layers):
         action_type = layer.get("action")
@@ -68,9 +75,18 @@ def execute_action(config: dict, action_name: str, cli_args: dict = None, config
         # Handle Produces
         produces = layer.get("produces")
         if produces:
-            if len(produces) > 0:
+            if isinstance(produces, str):
                 context[produces] = result
                 print(f"    Produced {produces}: {result}")
+            elif isinstance(produces, list):
+                if len(produces) == 1 and not isinstance(result, (list, dict, tuple)):
+                    context[produces[0]] = result
+                    print(f"    Produced {produces[0]}: {result}")
+                elif isinstance(result, dict):
+                    for k in produces:
+                        if k in result:
+                            context[k] = result[k]
+                            print(f"    Produced {k}: {result[k]}")
     
     print("Action completed successfully.")
 
