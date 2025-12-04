@@ -34,9 +34,6 @@
                     ]
                 },
                 {
-                    "uses": [
-                        "reducer_folder"
-                    ],
                     "action": "create-file",
                     "params": [
                         { "template": "reducer.tpl" },
