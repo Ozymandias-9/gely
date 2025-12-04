@@ -1,4 +1,7 @@
 from core.handlers import handle_create_folder, handle_create_file, handle_append_to_file
+from core.store_manager import StoreManager
+from core.input_handler import InputHandler
+from core.engine import render_config_string
 
 HANDLERS = {
     "create-folder": handle_create_folder,
@@ -28,13 +31,17 @@ def execute_action(config: dict, action_name: str, cli_args: dict = None, config
     context["project_root"] = os.getcwd()
     context["config_dir"] = config_dir
 
+    # Initialize StoreManager
+    settings = config.get("settings", {})
+    store_file = settings.get("store_file", "gely/store.json")
+    store_manager = StoreManager(store_file)
+    
+    # Initialize InputHandler
+    input_handler = InputHandler(store_manager)
+
     # Process explicit inputs
     inputs = action_def.get("inputs", {})
-    for input_name, input_def in inputs.items():
-        if input_name not in context:
-            prompt = input_def.get("prompt", f"Enter value for '{input_name}': ")
-            val = input(f"{prompt} ")
-            context[input_name] = val
+    input_handler.handle_inputs(inputs, context)
 
     for i, layer in enumerate(layers):
         action_type = layer.get("action")
@@ -50,19 +57,8 @@ def execute_action(config: dict, action_name: str, cli_args: dict = None, config
         
         # Handle list of params (mixed strings and dicts)
         for param in layer_params:
-            if isinstance(param, str):
-                # User input required if not in context
-                if param in context:
-                    resolved_params[param] = context[param]
-                else:
-                    # Prompt user
-                    val = input(f"    Enter value for '{param}': ")
-                    resolved_params[param] = val
-                    context[param] = val # Add to context for future use
-            elif isinstance(param, dict):
-                # Static or template param
-                for k, v in param.items():
-                    resolved_params[k] = v
+            for k, v in param.items():
+                resolved_params[k] = v
         
         # Execute Handler
         handler = HANDLERS[action_type]
@@ -78,16 +74,27 @@ def execute_action(config: dict, action_name: str, cli_args: dict = None, config
             if isinstance(produces, str):
                 context[produces] = result
                 print(f"    Produced {produces}: {result}")
-            elif isinstance(produces, list):
-                if len(produces) == 1 and not isinstance(result, (list, dict, tuple)):
-                    context[produces[0]] = result
-                    print(f"    Produced {produces[0]}: {result}")
-                elif isinstance(result, dict):
-                    for k in produces:
-                        if k in result:
-                            context[k] = result[k]
-                            print(f"    Produced {k}: {result[k]}")
     
+    # Handle Store Directive
+    store_def = action_def.get("store")
+    if store_def:
+        print("  Updating store...")
+        collection = store_def.get("in")
+        key_template = store_def.get("key")
+        data_template = store_def.get("data", {})
+        
+        if collection and key_template:
+            # Resolve key
+            key = render_config_string(key_template, context)
+            
+            # Resolve data
+            data = {}
+            for k, v in data_template.items():
+                data[k] = render_config_string(v, context)
+            
+            store_manager.add_item(collection, key, data)
+            print(f"    Stored item '{key}' in '{collection}'")
+
     print("Action completed successfully.")
 
 import os

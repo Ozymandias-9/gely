@@ -1,5 +1,8 @@
 {
     "project": "Random Project",
+    "settings": {
+        "storeFile": "gely/store.json"
+    },
     "actions": {
         "add-reducer": {
             "title": "Add reducer",
@@ -78,17 +81,48 @@
                         { "target": "main/services/index.js" },
                         { "delimiter": "// @definition" }
                     ]
+                },
+                {
+                    "action": "append-to-file",
+                    "params": [
+                        { "input": "import { {reducer_name}Reducer } from '{reducer_path}';" },
+                        { "target": "main/reducers/index.js" },
+                        { "delimiter": "// @imports" }
+                    ]
+                },
+                {
+                    "action": "append-to-file",
+                    "params": [
+                        { "input": "    {reducer_name}Reducer," },
+                        { "target": "main/reducers/index.js" },
+                        { "delimiter": "// @definition" }
+                    ]
                 }
-            ]
+            ],
+            "store": {
+                "in": "reducers",
+                "key": "{reducer_name}", 
+                "data": {
+                    "name": "{reducer_name}",
+                    "path": "{reducer_folder}"
+                }
+            }
         },
         "add-action": {
             "title": "Add action",
             "inputs": {
-                "reducer_folder_name": {
-                    "prompt": "Enter the name of the reducer folder:"
-                },
-                "reducer_name": {
-                    "prompt": "Enter the name of the reducer:"
+                "selected_reducer": {
+                    "prompt": "Select the reducer to modify:",
+                    "type": "select",
+                    "source": {
+                        "type": "store",
+                        "collection": "reducers"
+                    },
+                    "display_key": "name",
+                    "map": {
+                        "reducer_name": "name",
+                        "reducer_path": "path"
+                    }
                 },
                 "action_name": {
                     "prompt": "Enter the name of the action to create:"
@@ -99,7 +133,7 @@
                     "action": "append-to-file",
                     "params": [
                         { "template": "action-type.tpl" },
-                        { "target": "main/{reducer_folder_name}/state/{reducer_name}.actionTypes.js" },
+                        { "target": "{reducer_path}/{reducer_name}.actionTypes.js" },
                         { "delimiter": "// @actionTypes" }
                     ]
                 }
