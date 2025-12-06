@@ -1,5 +1,18 @@
 import os
-from core.engine import render_template, render_filename, render_config_string
+from core.engine import render_template, render_vars
+
+def template_path_resolver(template_path, config_dir):
+    resolved_template_path = template_path
+
+    if not os.path.exists(resolved_template_path):
+        # Fallback to local templates dir if not found
+        fallback_path = os.path.join(config_dir, "templates", template_path)
+        if os.path.exists(fallback_path):
+            resolved_template_path = fallback_path
+        else:
+            raise FileNotFoundError(f"Template not found: {resolved_template_path}")
+        
+    return resolved_template_path
 
 def handle_create_folder(params: dict, context: dict):
     """
@@ -11,7 +24,7 @@ def handle_create_folder(params: dict, context: dict):
         raise ValueError("create-folder requires a 'target' parameter")
     
     # Render target with context
-    target_dir = render_filename(target_raw, context)
+    target_dir = render_vars(target_raw, context)
     
     # Create directory
     os.makedirs(target_dir, exist_ok=True)
@@ -31,16 +44,8 @@ def handle_create_file(params: dict, context: dict):
         raise ValueError("create-file requires 'template' and 'output' parameters")
     
     config_dir = context.get("config_dir", ".")
-    template_path = os.path.join(config_dir, "templates", template_name)
-    
-    if not os.path.exists(template_path):
-        # Fallback to local templates dir if not found (optional)
-        fallback_path = os.path.join("templates", template_name)
-        if os.path.exists(fallback_path):
-            template_path = fallback_path
-        else:
-            raise FileNotFoundError(f"Template not found: {template_path}")
-        
+    template_path = template_path_resolver(template_name, config_dir)
+
     with open(template_path, 'r', encoding='utf-8') as f:
         template_str = f.read()
         
@@ -48,7 +53,7 @@ def handle_create_file(params: dict, context: dict):
     content = render_template(template_str, context)
     
     # Render output filename/path
-    output_path = render_filename(output_template, context)
+    output_path = render_vars(output_template, context)
     
     # Ensure dir exists
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -70,7 +75,7 @@ def handle_append_to_file(params: dict, context: dict):
     if not target_template:
         raise ValueError("append-to-file requires 'target'")
         
-    target_path = render_filename(target_template, context)
+    target_path = render_vars(target_template, context)
     
     if not os.path.exists(target_path):
         raise FileNotFoundError(f"Target file for append not found: {target_path}")
@@ -79,15 +84,7 @@ def handle_append_to_file(params: dict, context: dict):
     
     if template_name:
         config_dir = context.get("config_dir", ".")
-        template_path = os.path.join(config_dir, "templates", template_name)
-        
-        if not os.path.exists(template_path):
-            # Fallback
-            fallback_path = os.path.join("templates", template_name)
-            if os.path.exists(fallback_path):
-                template_path = fallback_path
-            else:
-                raise FileNotFoundError(f"Template not found: {template_path}")
+        template_path = template_path_resolver(template_name, config_dir)
                 
         with open(template_path, 'r', encoding='utf-8') as f:
             template_str = f.read()
@@ -100,7 +97,7 @@ def handle_append_to_file(params: dict, context: dict):
             content_to_append = str(context[input_content])
         else:
             # Render as config string
-            content_to_append = render_config_string(input_content, context)
+            content_to_append = render_vars(input_content, context)
         
     else:
         raise ValueError("append-to-file requires 'input' or 'template'")

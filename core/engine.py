@@ -4,33 +4,23 @@ import re
 PLACEHOLDER_REGEX = re.compile(r"{{\s*(\w+)\s*}}")
 CONFIG_PLACEHOLDER_REGEX = re.compile(r"{\s*(\w+)\s*}")
 
+def replacer(match, params):
+    key = match.group(1)
+    return str(params.get(key, match.group(0)))
 
 def render_template(template_str: str, params: dict) -> str:
     """
     Replace {{ placeholders }} in template_str using params dict.
     Missing params remain untouched.
     """
-    def replacer(match):
-        key = match.group(1)
-        return str(params.get(key, match.group(0)))  # keep original if missing
-
-    return PLACEHOLDER_REGEX.sub(replacer, template_str)
+    return PLACEHOLDER_REGEX.sub(lambda match: replacer(match, params), template_str)
 
 
-def render_config_string(template_str: str, params: dict) -> str:
+def render_vars(template_str: str, params: dict) -> str:
     """
     Replace { placeholders } in config strings using params dict.
     """
-    def replacer(match):
-        key = match.group(1)
-        return str(params.get(key, match.group(0)))
-
-    return CONFIG_PLACEHOLDER_REGEX.sub(replacer, template_str)
-
-
-def render_filename(filename_template: str, params: dict) -> str:
-    """Allow templated filenames like middleware_{{name}}.ts or {name}.js"""
-    return render_config_string(filename_template, params)
+    return CONFIG_PLACEHOLDER_REGEX.sub(lambda match: replacer(match, params), template_str)
 
 
 def create_from_template(
@@ -45,7 +35,7 @@ def create_from_template(
 
     # Render contents and filename
     output_str = render_template(template_str, params)
-    output_filename = render_filename(output_filename_template, params)
+    output_filename = render_vars(output_filename_template, params)
 
     # Ensure directory exists
     os.makedirs(output_dir, exist_ok=True)

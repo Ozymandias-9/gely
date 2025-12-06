@@ -1,7 +1,7 @@
 from core.handlers import handle_create_folder, handle_create_file, handle_append_to_file
 from core.store_manager import StoreManager
 from core.input_handler import InputHandler
-from core.engine import render_config_string
+from core.engine import render_vars
 
 HANDLERS = {
     "create-folder": handle_create_folder,
@@ -85,12 +85,12 @@ def execute_action(config: dict, action_name: str, cli_args: dict = None, config
         
         if collection and key_template:
             # Resolve key
-            key = render_config_string(key_template, context)
+            key = render_vars(key_template, context)
             
             # Resolve data
             data = {}
             for k, v in data_template.items():
-                data[k] = render_config_string(v, context)
+                data[k] = render_vars(v, context)
             
             store_manager.add_item(collection, key, data)
             print(f"    Stored item '{key}' in '{collection}'")
